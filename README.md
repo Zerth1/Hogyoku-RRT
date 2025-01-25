@@ -1,4 +1,5 @@
 # The-Logic-Forge
 
-![image](https://github.com/user-attachments/assets/644ecc97-e5dd-4189-a5a8-c9d913a6fa8d)
+![apple-touch-icon](https://github.com/user-attachments/assets/9950369c-bb62-4a1b-a4d7-f02549ab805a)
+
 
