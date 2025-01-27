@@ -312,9 +312,6 @@ while not window_should_close():
             else:
                 answer = True
             conclusion = object_a + " is less than " + object_b
-            print(answer)
-            print(chained_premises)
-            print("Conclusion: " + conclusion)
     if is_settings:
         if deep_settings:
             draw_texture(deep_settings_background_texture, 0, 0, GRAY)
