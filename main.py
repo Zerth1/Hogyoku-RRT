@@ -371,7 +371,7 @@ while not window_should_close():
                 result = answer
                 answered_flag = True
             if answered_flag:
-                if result:
+                if result: 
                     if chosen_gamemode == "2D Spatial":
                         settings_data["Points"] += len(premises)
                     elif chosen_gamemode == "Chain Logic":
