@@ -379,6 +379,7 @@ while not window_should_close():
                 else:
                     if chosen_gamemode == "2D Spatial":
                         settings_data["Points"] -= len(premises)
+                        settings_data["Points"] = max(0, settings_data["Points"])
                     elif chosen_gamemode == "Chain Logic":
                         settings_data["Points"] -= len(chained_premises)
                         settings_data["Points"] = max(0, settings_data["Points"])
