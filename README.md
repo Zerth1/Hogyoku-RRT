@@ -1,6 +1,7 @@
 # The-Logic-Forge
 
 **An experimental game that strains relational processing**
+
 Gamemodes:
 **2D Spatial**
 
