@@ -285,27 +285,32 @@ while not window_should_close():
                     else:
                         chained_premises.append(objects[i][j + 1] + " is more than " + objects[i][j])
             total_black_list = gibberish_words.copy()
+            object_a = ""
+            object_b = ""
             old_chosen_object = chosen_object
-            previous_chain_index = get_largest_chain(objects, chosen_object)
-            previous_chain = objects[previous_chain_index]
-            objects.remove(previous_chain)
-            total_black_list.append(old_chosen_object)
-            for i in range(chain_logic_settings["NestedChainCount"]):
-                chosen_object = random.choice(previous_chain[previous_chain.index(chosen_object):])
-                nested_gibberish_words = list(generate_gibberish_words((object_amount / chain_logic_settings["ChainCount"]) - 1, settings_data["Settings"]["GarbageWordLength"], total_black_list))
-                nested_gibberish_words.append(chosen_object)
-                while nested_gibberish_words.index(chosen_object) == 0 or nested_gibberish_words.index(chosen_object) == len(nested_gibberish_words) - 1:
-                    random.shuffle(nested_gibberish_words)
-                previous_chain = nested_gibberish_words
-                total_black_list += nested_gibberish_words.copy()
-                for j in range(len(nested_gibberish_words) - 1):
-                    if random.random() > 0.5:
-                        chained_premises.append(nested_gibberish_words[j] + " is less than " + nested_gibberish_words[j + 1])
-                    else:
-                        chained_premises.append(nested_gibberish_words[j + 1] + " is more than " + nested_gibberish_words[j])                 
+            for i in range(chain_logic_settings["ChainCount"]):
+                previous_chain_index = get_largest_chain(objects, old_chosen_object)
+                previous_chain = objects[previous_chain_index]
+                objects.remove(previous_chain)
+                total_black_list.append(old_chosen_object)
+                for j in range(chain_logic_settings["NestedChainCount"]):
+                    chosen_object = random.choice(previous_chain[previous_chain.index(chosen_object):])
+                    nested_gibberish_words = list(generate_gibberish_words((object_amount / chain_logic_settings["ChainCount"]) - 1, settings_data["Settings"]["GarbageWordLength"], total_black_list))
+                    nested_gibberish_words.append(chosen_object)
+                    while nested_gibberish_words.index(chosen_object) == 0 or nested_gibberish_words.index(chosen_object) == len(nested_gibberish_words) - 1:
+                        random.shuffle(nested_gibberish_words)
+                    previous_chain = nested_gibberish_words
+                    total_black_list += nested_gibberish_words.copy()
+                    for k in range(len(nested_gibberish_words) - 1):
+                        if random.random() > 0.5:
+                            chained_premises.append(nested_gibberish_words[k] + " is less than " + nested_gibberish_words[k + 1])
+                        else:
+                            chained_premises.append(nested_gibberish_words[k + 1] + " is more than " + nested_gibberish_words[k])        
+                chosen_object = old_chosen_object
+                if i == 0:
+                    object_a = random.choice(objects)[0]
+                    object_b = previous_chain[-1]
             random.shuffle(chained_premises)
-            object_a = random.choice(objects)[0]
-            object_b = previous_chain[-1]
             if random.random() > 0.5:
                 answer = False
                 object_a, object_b = object_b, object_a
