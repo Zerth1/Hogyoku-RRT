@@ -146,9 +146,11 @@ unload_image(deep_settings_background)
 
 is_generating = True
 directions = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]
+opposite_directions = ["South", "North", "West", "East", "South-West", "South-East", "North-West", "North-East"]
 problem_spatial_code = {}
 premises = []
 chained_premises = []
+negated_premises = []
 conclusion = ""
 answer = False
 def generate_gibberish_word(word_length: int):
@@ -238,8 +240,14 @@ while not window_should_close():
                 x_distance = objects_location_x[i + 1] - objects_location_x[i]
                 y_distance = objects_location_y[i + 1] - objects_location_y[i]
                 direction = get_direction(x_distance, y_distance)
-                considered_relations.add(direction)
-                premises.append(objects[i] + " is " + problem_spatial_code[direction] + " of " + objects[i + 1])
+                if random.random() > 0.25:
+                    negated_premises.append(False)
+                    considered_relations.add(direction)
+                    premises.append(objects[i] + " is " + problem_spatial_code[direction] + " of " + objects[i + 1])
+                else:
+                    negated_premises.append(True)
+                    considered_relations.add(opposite_directions[directions.index(direction)])
+                    premises.append(objects[i] + " is " + problem_spatial_code[opposite_directions[directions.index(direction)]] + " of " + objects[i + 1])
             random.shuffle(premises)
             conclusion_obj_1 = objects[0]
             conclusion_obj_2 = objects[-1]
@@ -349,11 +357,18 @@ while not window_should_close():
                     premise_page = min(premise_page + 1, int(math.ceil(len(premises) / premises_per_page)))
                 elif chosen_gamemode == "Chain Logic":
                     premise_page = min(premise_page + 1, int(math.ceil(len(chained_premises) / premises_per_page)))
+            default_premise_color = WHITE
             if chosen_gamemode == "2D Spatial":
                 last_i = min(premises_per_page, len(premises) - (premises_per_page * (premise_page - 1)))
                 for i in range(last_i):
-                    current_premise = premises[(premises_per_page * (premise_page - 1)) + i]
-                    draw_text_ex(premise_font, current_premise, Vector2(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, current_premise, 35, 2).x / 2)), int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * i)), 35, 2, WHITE)
+                    premise_index = (premises_per_page * (premise_page - 1)) + i
+                    current_premise = premises[premise_index]
+                    negation_value = negated_premises[premise_index]
+                    if negation_value:
+                        default_premise_color = Color(250, 56, 52, 255)
+                    else:
+                        default_premise_color = WHITE
+                    draw_text_ex(premise_font, current_premise, Vector2(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, current_premise, 35, 2).x / 2)), int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * i)), 35, 2, default_premise_color)
                 if premise_page == int(math.ceil(len(premises) / premises_per_page)):
                     draw_text_ex(premise_font, "Conclusion: " + conclusion, Vector2(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, "Conclusion: " + conclusion, 35, 2).x / 2)), int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * last_i)), 35, 2, WHITE)
                     draw_rectangle_lines_ex(Rectangle(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, "Conclusion: " + conclusion, 35, 2).x / 2)) - 5, int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * last_i), measure_text_ex(premise_font, "Conclusion: " + conclusion, 35, 2).x + 10, 35), 5.0, BLUE)
@@ -396,6 +411,7 @@ while not window_should_close():
                 problem_spatial_code = {}
                 premises = []
                 chained_premises = []
+                negated_premises = []
                 conclusion = ""
                 answer = False
                 with open("settings_data.json", "w") as file:
