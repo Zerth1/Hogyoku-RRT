@@ -345,19 +345,15 @@ while not window_should_close():
         elif chosen_gamemode == "Ambiguous Order":
             object_amount = settings_data["Settings"]["Ambiguous Order"]["Objects"]
             objects = list(generate_gibberish_words(object_amount, settings_data["Settings"]["GarbageWordLength"], []))
-            premises = []
             intervals = [[0, object_amount - 1]]
-            needle_frequencies = []
-            for i in range(object_amount - 2):
-                needle_frequencies.append(0)
             while len(intervals) < object_amount - 1:
+                print(intervals)
                 new_intervals = []
                 for interval in intervals:
                     if interval[0] == interval[1] - 1:
                         new_intervals.append(interval)
-                        continue
-                    needle = random.randint(interval[0] + 1, interval[1] - 1)
-                    needle_frequencies[needle - 1] += 1
+                        continue      
+                    needle = random.randint(interval[0] + 1, interval[1] - 1)              
                     if random.random() > 0.5:
                         ambiguous_premises.append(objects[needle] + " is more than " + objects[interval[0]] + " but less than " + objects[interval[1]])
                     else:
@@ -365,22 +361,19 @@ while not window_should_close():
                     new_intervals.append([interval[0], needle])
                     new_intervals.append([needle, interval[1]])
                 intervals = new_intervals
-            sorted_needle_frequencies = needle_frequencies.copy()
-            sorted_needle_frequencies.sort(reverse=True)
-            object_a = needle_frequencies.index(sorted_needle_frequencies[0])
-            if sorted_needle_frequencies[0] == sorted_needle_frequencies[1]:
-                object_b = needle_frequencies[object_a + 1:].index(sorted_needle_frequencies[1]) + (object_a + 1)
-            else:
-                object_b = needle_frequencies.index(sorted_needle_frequencies[1])
-            if object_a > object_b:
-                object_a, object_b = object_b, object_a
+            object_a = objects.index(random.choice(objects[:object_amount // 2]))
+            object_b = objects.index(random.choice(objects[object_amount // 2:]))
             random.shuffle(ambiguous_premises)
             if random.random() > 0.5:
                 answer = False
                 object_a, object_b = object_b, object_a
             else:
                 answer = True
-            conclusion = objects[object_a + 1] + " is less than " + objects[object_b + 1]
+            conclusion = objects[object_a] + " is less than " + objects[object_b]
+            print(ambiguous_premises)
+            print("Conclusion: " + conclusion)
+            print(answer)
+            print(objects)
     if is_settings:
         if deep_settings:
             draw_texture(deep_settings_background_texture, 0, 0, GRAY)
@@ -462,13 +455,16 @@ while not window_should_close():
                         settings_data["Points"] += len(premises)
                     elif chosen_gamemode == "Chain Logic":
                         settings_data["Points"] += len(chained_premises)
+                    elif chosen_gamemode == "Ambiguous Order":
+                        settings_data["Points"] += len(ambiguous_premises)
                 else:
                     if chosen_gamemode == "2D Spatial":
                         settings_data["Points"] -= len(premises)
-                        settings_data["Points"] = max(0, settings_data["Points"])
                     elif chosen_gamemode == "Chain Logic":
                         settings_data["Points"] -= len(chained_premises)
-                        settings_data["Points"] = max(0, settings_data["Points"])
+                    elif chosen_gamemode == "Ambiguous Order":
+                        settings_data["Points"] -= len(ambiguous_premises)
+                    settings_data["Points"] = max(0, settings_data["Points"])
                 if settings_data["Rank"] != "IQ Grandmaster" and settings_data["Points"] >= RANKINGS[ORDERED_RANKINGS[ORDERED_RANKINGS.index(settings_data["Rank"]) + 1]]["Points"]:
                     settings_data["Rank"] = ORDERED_RANKINGS[ORDERED_RANKINGS.index(settings_data["Rank"]) + 1]
                 if settings_data["Rank"] != "Mortal Mind" and settings_data["Points"] < RANKINGS[ORDERED_RANKINGS[ORDERED_RANKINGS.index(settings_data["Rank"])]]["Points"]:
