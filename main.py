@@ -347,7 +347,6 @@ while not window_should_close():
             objects = list(generate_gibberish_words(object_amount, settings_data["Settings"]["GarbageWordLength"], []))
             intervals = [[0, object_amount - 1]]
             while len(intervals) < object_amount - 1:
-                print(intervals)
                 new_intervals = []
                 for interval in intervals:
                     if interval[0] == interval[1] - 1:
@@ -370,10 +369,6 @@ while not window_should_close():
             else:
                 answer = True
             conclusion = objects[object_a] + " is less than " + objects[object_b]
-            print(ambiguous_premises)
-            print("Conclusion: " + conclusion)
-            print(answer)
-            print(objects)
     if is_settings:
         if deep_settings:
             draw_texture(deep_settings_background_texture, 0, 0, GRAY)
