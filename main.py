@@ -346,13 +346,15 @@ while not window_should_close():
             object_amount = settings_data["Settings"]["Ambiguous Order"]["Objects"]
             objects = list(generate_gibberish_words(object_amount, settings_data["Settings"]["GarbageWordLength"], []))
             intervals = [[0, object_amount - 1]]
+            first_needle = None
             while len(intervals) < object_amount - 1:
                 new_intervals = []
                 for interval in intervals:
                     if interval[0] == interval[1] - 1:
                         new_intervals.append(interval)
                         continue      
-                    needle = random.randint(interval[0] + 1, interval[1] - 1)              
+                    needle = random.randint(interval[0] + 1, interval[1] - 1)
+                    first_needle = first_needle or needle              
                     if random.random() > 0.5:
                         ambiguous_premises.append(objects[needle] + " is more than " + objects[interval[0]] + " but less than " + objects[interval[1]])
                     else:
@@ -360,8 +362,8 @@ while not window_should_close():
                     new_intervals.append([interval[0], needle])
                     new_intervals.append([needle, interval[1]])
                 intervals = new_intervals
-            object_a = objects.index(random.choice(objects[:object_amount // 2]))
-            object_b = objects.index(random.choice(objects[object_amount // 2:]))
+            object_a = objects.index(random.choice(objects[:first_needle]))
+            object_b = objects.index(random.choice(objects[first_needle:]))
             random.shuffle(ambiguous_premises)
             if random.random() > 0.5:
                 answer = False
