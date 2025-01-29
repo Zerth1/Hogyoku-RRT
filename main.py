@@ -66,7 +66,7 @@ SETTINGS = {
 }
 premise_page = 1
 premises_per_page = 8
-init_window(RESOLUTION_X, RESOLUTION_Y, "The Logic Forge")
+init_window(RESOLUTION_X, RESOLUTION_Y, "Hogyoku-RRT")
 set_target_fps(get_monitor_refresh_rate(get_current_monitor()))
 
 premise_font = load_font("Fira_Sans/FiraSans-SemiBold.ttf")
