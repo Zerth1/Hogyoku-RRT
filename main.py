@@ -57,6 +57,10 @@ SETTINGS = {
             "ChainLengthMin": 2,
             "ChainLengthMax": 2,
         },
+        "Ambiguous Order": {
+            "Active": False,
+            "Objects": 13,
+        },
         "GarbageWordLength": 3,
     },
 }
@@ -111,13 +115,19 @@ settings_buttons["nested_chain_count"].text = str(settings_data["Settings"]["Cha
 settings_buttons["chain_length_min"].text = str(settings_data["Settings"]["Chain Logic"]["ChainLengthMin"])
 settings_buttons["chain_length_max"].text = str(settings_data["Settings"]["Chain Logic"]["ChainLengthMax"])
 
-settings_buttons["garbage_length"] = user_interface.InputButton("Garbage Word Length:", 25, Rectangle(50 + measure_text("Garbage Word Length:", 25) + 10, 180, measure_text("0", 25), 25))
+settings_buttons["ambiguous_order_active"] = user_interface.Button("Ambiguous Order Active:", 25, Rectangle(50 + measure_text("Ambiguous Order Active:", 25) + 10, 75, 25, 25))
+settings_buttons["ambiguous_order_objects"] = user_interface.InputButton("Objects:", 25, Rectangle(50 + measure_text("Objects:", 25) + 10, 125, 25, 25))
+settings_buttons["ambiguous_order_active"]._on = settings_data["Settings"]["Ambiguous Order"]["Active"]
+settings_buttons["ambiguous_order_objects"].text = str(settings_data["Settings"]["Ambiguous Order"]["Objects"])
+
+settings_buttons["garbage_length"] = user_interface.InputButton("Garbage Word Length:", 25, Rectangle(50 + measure_text("Garbage Word Length:", 25) + 10, 230, measure_text("0", 25), 25))
 settings_buttons["garbage_length"].text = str(settings_data["Settings"]["GarbageWordLength"])
 blacklist_toggle = []
 def redirect_settings():
     global deep_settings
     draw_text("Spatial Mode", 50, 80, 25, WHITE)
     draw_text("Chain Logic Mode", 50, 130, 25, WHITE)
+    draw_text("Ambiguous Order", 50, 180, 25, WHITE)
     if is_mouse_button_pressed(MouseButton.MOUSE_BUTTON_LEFT):
         current_position = get_mouse_position()
         if check_collision_point_rec(current_position, Rectangle(50, 80, measure_text("Spatial Mode", 25), 25)):
@@ -131,6 +141,10 @@ def redirect_settings():
             settings_buttons["nested_chain_count"].toggle()
             settings_buttons["chain_length_min"].toggle()   
             settings_buttons["chain_length_max"].toggle()
+        elif check_collision_point_rec(current_position, Rectangle(50, 180, measure_text("Ambiguous Order", 25), 25)):
+            deep_settings = True
+            settings_buttons["ambiguous_order_active"].toggle()
+            settings_buttons["ambiguous_order_objects"].toggle()
 background = load_image("koji_room.png")
 settings_background = load_image("koji_room_2.png")
 deep_settings_background = load_image("koji_room_3.png")
@@ -150,6 +164,7 @@ opposite_directions = ["South", "North", "West", "East", "South-West", "South-Ea
 problem_spatial_code = {}
 premises = []
 chained_premises = []
+ambiguous_premises = []
 negated_premises = []
 conclusion = ""
 answer = False
@@ -209,6 +224,8 @@ while not window_should_close():
             gamemode_options.append("2D Spatial")
         if settings_data["Settings"]["Chain Logic"]["Active"]:
             gamemode_options.append("Chain Logic")
+        if settings_data["Settings"]["Ambiguous Order"]["Active"]:
+            gamemode_options.append("Ambiguous Order")
         chosen_gamemode = random.choice(gamemode_options)
         is_generating = False
         if chosen_gamemode == "2D Spatial":
@@ -325,6 +342,45 @@ while not window_should_close():
             else:
                 answer = True
             conclusion = object_a + " is less than " + object_b
+        elif chosen_gamemode == "Ambiguous Order":
+            object_amount = settings_data["Settings"]["Ambiguous Order"]["Objects"]
+            objects = list(generate_gibberish_words(object_amount, settings_data["Settings"]["GarbageWordLength"], []))
+            premises = []
+            intervals = [[0, object_amount - 1]]
+            needle_frequencies = []
+            for i in range(object_amount - 2):
+                needle_frequencies.append(0)
+            while len(intervals) < object_amount - 1:
+                new_intervals = []
+                for interval in intervals:
+                    if interval[0] == interval[1] - 1:
+                        new_intervals.append(interval)
+                        continue
+                    needle = random.randint(interval[0] + 1, interval[1] - 1)
+                    needle_frequencies[needle - 1] += 1
+                    if random.random() > 0.5:
+                        ambiguous_premises.append(objects[needle] + " is more than " + objects[interval[0]] + " but less than " + objects[interval[1]])
+                    else:
+                        ambiguous_premises.append(objects[needle] + " is less than " + objects[interval[1]] + " but more than " + objects[interval[0]])
+                    new_intervals.append([interval[0], needle])
+                    new_intervals.append([needle, interval[1]])
+                intervals = new_intervals
+            sorted_needle_frequencies = needle_frequencies.copy()
+            sorted_needle_frequencies.sort(reverse=True)
+            object_a = needle_frequencies.index(sorted_needle_frequencies[0])
+            if sorted_needle_frequencies[0] == sorted_needle_frequencies[1]:
+                object_b = needle_frequencies[object_a + 1:].index(sorted_needle_frequencies[1]) + (object_a + 1)
+            else:
+                object_b = needle_frequencies.index(sorted_needle_frequencies[1])
+            if object_a > object_b:
+                object_a, object_b = object_b, object_a
+            random.shuffle(ambiguous_premises)
+            if random.random() > 0.5:
+                answer = False
+                object_a, object_b = object_b, object_a
+            else:
+                answer = True
+            conclusion = objects[object_a + 1] + " is less than " + objects[object_b + 1]
     if is_settings:
         if deep_settings:
             draw_texture(deep_settings_background_texture, 0, 0, GRAY)
@@ -357,6 +413,8 @@ while not window_should_close():
                     premise_page = min(premise_page + 1, int(math.ceil(len(premises) / premises_per_page)))
                 elif chosen_gamemode == "Chain Logic":
                     premise_page = min(premise_page + 1, int(math.ceil(len(chained_premises) / premises_per_page)))
+                elif chosen_gamemode == "Ambiguous Order":
+                    premise_page = min(premise_page + 1, int(math.ceil(len(ambiguous_premises) / premises_per_page)))                    
             default_premise_color = WHITE
             if chosen_gamemode == "2D Spatial":
                 last_i = min(premises_per_page, len(premises) - (premises_per_page * (premise_page - 1)))
@@ -378,6 +436,14 @@ while not window_should_close():
                     current_premise = chained_premises[(premises_per_page * (premise_page - 1)) + i]
                     draw_text_ex(premise_font, current_premise, Vector2(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, current_premise, 35, 2).x / 2)), int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * i)), 35, 2, WHITE)                
                 if premise_page == int(math.ceil(len(chained_premises) / premises_per_page)):
+                    draw_text_ex(premise_font, "Conclusion: " + conclusion, Vector2(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, "Conclusion: " + conclusion, 35, 2).x / 2)), int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * last_i)), 35, 2, WHITE)
+                    draw_rectangle_lines_ex(Rectangle(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, "Conclusion: " + conclusion, 35, 2).x / 2)) - 5, int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * last_i), measure_text_ex(premise_font, "Conclusion: " + conclusion, 35, 2).x + 10, 35), 5.0, BLUE)            
+            elif chosen_gamemode == "Ambiguous Order":
+                last_i = min(premises_per_page, len(ambiguous_premises) - (premises_per_page * (premise_page - 1)))
+                for i in range(last_i):
+                    current_premise = ambiguous_premises[(premises_per_page * (premise_page - 1)) + i]
+                    draw_text_ex(premise_font, current_premise, Vector2(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, current_premise, 35, 2).x / 2)), int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * i)), 35, 2, WHITE)                
+                if premise_page == int(math.ceil(len(ambiguous_premises) / premises_per_page)):
                     draw_text_ex(premise_font, "Conclusion: " + conclusion, Vector2(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, "Conclusion: " + conclusion, 35, 2).x / 2)), int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * last_i)), 35, 2, WHITE)
                     draw_rectangle_lines_ex(Rectangle(int((RESOLUTION_X / 2) - (measure_text_ex(premise_font, "Conclusion: " + conclusion, 35, 2).x / 2)) - 5, int(0.25 * (RESOLUTION_Y / 2)) + 80 + (40 * last_i), measure_text_ex(premise_font, "Conclusion: " + conclusion, 35, 2).x + 10, 35), 5.0, BLUE)            
             draw_text("[0] False", int((RESOLUTION_X / 2) - (0.75 * (RESOLUTION_Y / 2)) + (0.75 * RESOLUTION_Y) + 50), int((RESOLUTION_Y / 2) - 175), 50, WHITE)
@@ -411,7 +477,9 @@ while not window_should_close():
                 problem_spatial_code = {}
                 premises = []
                 chained_premises = []
+                ambiguous_premises = []
                 negated_premises = []
+                premise_page = 1
                 conclusion = ""
                 answer = False
                 with open("settings_data.json", "w") as file:
@@ -443,6 +511,10 @@ while not window_should_close():
         settings_data["Settings"]["Chain Logic"]["NestedChainCount"] = int(settings_buttons["nested_chain_count"].text)
         settings_data["Settings"]["Chain Logic"]["ChainLengthMin"] = max(int(settings_buttons["chain_length_min"].text), 3)
         settings_data["Settings"]["Chain Logic"]["ChainLengthMax"] = max(int(settings_buttons["chain_length_max"].text), settings_data["Settings"]["Chain Logic"]["ChainLengthMin"], 3)
+        
+        settings_data["Settings"]["Ambiguous Order"]["Active"] = settings_buttons["ambiguous_order_active"]._on
+        settings_data["Settings"]["Ambiguous Order"]["Objects"] = max(int(settings_buttons["ambiguous_order_objects"].text), 8)
+
         settings_data["Settings"]["GarbageWordLength"] = int(settings_buttons["garbage_length"].text)
         with open("settings_data.json", "w") as file:
             json.dump(settings_data, file)
