@@ -1,4 +1,4 @@
-# The-Logic-Forge
+# Hogyoku-RRT
 
 **An experimental game that strains relational processing**
 
