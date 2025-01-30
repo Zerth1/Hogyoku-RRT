@@ -146,7 +146,7 @@ def redirect_settings():
             settings_buttons["ambiguous_order_active"].toggle()
             settings_buttons["ambiguous_order_objects"].toggle()
 background = load_image("koji_room.png")
-settings_background = load_image("koji_room_2.png")
+settings_background = load_image("koji_room_2.jpeg")
 deep_settings_background = load_image("koji_room_3.png")
 question_mat = load_image("koji_brain.jpeg")
 question_mat_texture = load_texture_from_image(question_mat)
@@ -352,9 +352,12 @@ while not window_should_close():
                 for interval in intervals:
                     if interval[0] == interval[1] - 1:
                         new_intervals.append(interval)
-                        continue      
-                    needle = random.randint(interval[0] + 1, interval[1] - 1)
-                    first_needle = first_needle or needle              
+                        continue
+                    needle = random.randint(interval[0] + 1, interval[1] - 1)      
+                    old_needle = first_needle
+                    first_needle = first_needle or needle
+                    if old_needle != first_needle:
+                        needle = int(0.5 * (object_amount - 1))
                     if random.random() > 0.5:
                         ambiguous_premises.append(objects[needle] + " is more than " + objects[interval[0]] + " but less than " + objects[interval[1]])
                     else:
@@ -391,7 +394,7 @@ while not window_should_close():
                 i += 1
         else:
             draw_texture(background_texture, 0, 0, GRAY)
-            draw_texture_ex(question_mat_texture, Vector2(int((RESOLUTION_X / 2) - 0.75 * (RESOLUTION_Y / 2)), 0.25 * (RESOLUTION_Y / 2)), 0.0, 0.75, Color(255, 255, 255, 64))
+            draw_texture_ex(question_mat_texture, Vector2(int((RESOLUTION_X / 2) - 0.75 * (RESOLUTION_Y / 2)), 0.25 * (RESOLUTION_Y / 2)), 0.0, 0.75, Color(255, 255, 255, 100))
             draw_rectangle(int((RESOLUTION_X / 2) - 0.75 * (RESOLUTION_Y / 2)), int(0.25 * (RESOLUTION_Y / 2)), int(0.75 * RESOLUTION_Y), 50, WHITE)
             draw_text("Rank: " + settings_data["Rank"] + " | Pts: " + str(settings_data["Points"]), int((RESOLUTION_X / 2) - 0.75 * (RESOLUTION_Y / 2)) + 25, int(0.25 * (RESOLUTION_Y / 2)) + 12, 25, BLACK)
             draw_text("[A] <  " + str(premise_page) + "  > [D]", int((RESOLUTION_X / 2) - (measure_text("[A] <  " + str(premise_page) + "  > [D]", 50) / 2)), int(0.75 * (RESOLUTION_Y) + 25), 50, WHITE)
