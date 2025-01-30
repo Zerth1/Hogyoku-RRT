@@ -62,8 +62,23 @@ SETTINGS = {
             "Objects": 13,
         },
         "GarbageWordLength": 3,
-        "TimerDuration": 30,
+        "TimerDuration": 45,
+        "AutoProgression": False,
     },
+    "AutoProgressionRecord": {
+        "2D Spatial": {
+            "Duration": 45,
+            "Streak": 0,
+        },
+        "Chain Logic": {
+            "Duration": 45,
+            "Streak": 0,
+        },
+        "Ambiguous Order": {
+            "Duration": 45,
+            "Streak": 0,
+        },
+    }
 }
 premise_page = 1
 premises_per_page = 8
@@ -125,6 +140,8 @@ settings_buttons["garbage_length"] = user_interface.InputButton("Garbage Word Le
 settings_buttons["garbage_length"].text = str(settings_data["Settings"]["GarbageWordLength"])
 settings_buttons["timer_duration"] = user_interface.InputButton("Timer Duration:", 25, Rectangle(50 + measure_text("Timer Duration:", 25) + 10, 280, measure_text("000", 25), 25))
 settings_buttons["timer_duration"].text = str(settings_data["Settings"]["TimerDuration"])
+settings_buttons["auto_progression"] = user_interface.Button("Auto Progression:", 25, Rectangle(50 + measure_text("Auto Progression:", 25) + 10, 330, 25, 25))
+settings_buttons["auto_progression"]._on = settings_data["Settings"]["AutoProgression"]
 blacklist_toggle = []
 def redirect_settings():
     global deep_settings
@@ -391,6 +408,8 @@ while not window_should_close():
                 settings_buttons["garbage_length"].toggle()
             if settings_buttons["timer_duration"]._enabled:
                 settings_buttons["timer_duration"].toggle()
+            if settings_buttons["auto_progression"]._enabled:
+                settings_buttons["auto_progression"].toggle()
         else:
             time_elapsed_since_generation = 0
             draw_texture(settings_background_texture, 0, 0, GRAY)
@@ -398,12 +417,16 @@ while not window_should_close():
                 settings_buttons["garbage_length"].toggle()
             if not settings_buttons["timer_duration"]._enabled:
                 settings_buttons["timer_duration"].toggle()
+            if not settings_buttons["auto_progression"]._enabled:
+                settings_buttons["auto_progression"].toggle()
             redirect_settings()
     else:
         if settings_buttons["garbage_length"]._enabled:
             settings_buttons["garbage_length"].toggle()
         if settings_buttons["timer_duration"]._enabled:
             settings_buttons["timer_duration"].toggle()
+        if settings_buttons["auto_progression"]._enabled:
+            settings_buttons["auto_progression"].toggle()
         if viewing_key:
             i = 0
             for relation, word in problem_spatial_code.items():
@@ -474,6 +497,12 @@ while not window_should_close():
                         settings_data["Points"] += len(chained_premises)
                     elif chosen_gamemode == "Ambiguous Order":
                         settings_data["Points"] += len(ambiguous_premises)
+                    settings_data["AutoProgressionRecord"][chosen_gamemode]["Streak"] += 1
+                    if settings_data["AutoProgressionRecord"][chosen_gamemode]["Streak"] == 10:
+                        settings_data["AutoProgressionRecord"][chosen_gamemode]["Streak"] = 0
+                        settings_data["AutoProgressionRecord"][chosen_gamemode]["Duration"] -= 5
+                        if settings_data["AutoProgressionRecord"][chosen_gamemode]["Duration"] < 30:
+                            settings_data["AutoProgressionRecord"][chosen_gamemode]["Duration"] = 45                    
                 else:
                     if chosen_gamemode == "2D Spatial":
                         settings_data["Points"] -= len(premises)
@@ -482,6 +511,7 @@ while not window_should_close():
                     elif chosen_gamemode == "Ambiguous Order":
                         settings_data["Points"] -= len(ambiguous_premises)
                     settings_data["Points"] = max(0, settings_data["Points"])
+                    settings_data["AutoProgressionRecord"][chosen_gamemode]["Streak"] = 0
                 if settings_data["Rank"] != "IQ Grandmaster" and settings_data["Points"] >= RANKINGS[ORDERED_RANKINGS[ORDERED_RANKINGS.index(settings_data["Rank"]) + 1]]["Points"]:
                     settings_data["Rank"] = ORDERED_RANKINGS[ORDERED_RANKINGS.index(settings_data["Rank"]) + 1]
                 if settings_data["Rank"] != "Mortal Mind" and settings_data["Points"] < RANKINGS[ORDERED_RANKINGS[ORDERED_RANKINGS.index(settings_data["Rank"])]]["Points"]:
@@ -503,7 +533,12 @@ while not window_should_close():
         elif is_key_released(KeyboardKey.KEY_V):
             viewing_key = False
         time_elapsed_since_generation += get_frame_time()
-        if time_elapsed_since_generation > settings_data["Settings"]["TimerDuration"]:
+        duration = 0
+        if settings_data["Settings"]["AutoProgression"]:
+            duration = settings_data["AutoProgressionRecord"][chosen_gamemode]["Duration"]
+        else:
+            duration = settings_data["Settings"]["TimerDuration"]
+        if time_elapsed_since_generation > duration:
             time_elapsed_since_generation = 0
             is_generating = True
             problem_spatial_code = {}
@@ -514,6 +549,16 @@ while not window_should_close():
             premise_page = 1
             conclusion = ""
             answer = False
+            if settings_data["Settings"]["AutoProgression"]:
+                settings_data["AutoProgressionRecord"][chosen_gamemode]["Duration"] = min(45, settings_data["AutoProgressionRecord"][chosen_gamemode]["Duration"] + 5)
+                if duration == settings_data["AutoProgressionRecord"][chosen_gamemode]["Duration"]:
+                    if chosen_gamemode == "2D Spatial":
+                        settings_data["Settings"]["2D Spatial"]["Premises"] = max(int(settings_buttons["two_d_premises"].text) - 1, 2)   
+                    elif chosen_gamemode == "Chain Logic":
+                        settings_data["Settings"]["Chain Logic"]["ChainCount"] = max(int(settings_buttons["chain_count"].text) - 1, 2)
+                    elif chosen_gamemode == "Ambiguous Order":
+                        settings_data["Settings"]["Ambiguous Order"]["Objects"] = max(int(settings_buttons["ambiguous_order_objects"].text) - 1, 8)
+                    pass
         else:
             timer_tint_alpha += get_frame_time() / 3.0
             if timer_tint_alpha > 1:
@@ -550,6 +595,7 @@ while not window_should_close():
 
         settings_data["Settings"]["GarbageWordLength"] = int(settings_buttons["garbage_length"].text)
         settings_data["Settings"]["TimerDuration"] = int(settings_buttons["timer_duration"].text)
+        settings_data["Settings"]["AutoProgression"] = settings_buttons["auto_progression"]._on
         with open("settings_data.json", "w") as file:
             json.dump(settings_data, file)
     for settings_object in settings_buttons.values():
