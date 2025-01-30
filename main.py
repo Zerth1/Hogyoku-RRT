@@ -62,6 +62,7 @@ SETTINGS = {
             "Objects": 13,
         },
         "GarbageWordLength": 3,
+        "TimerDuration": 30,
     },
 }
 premise_page = 1
@@ -122,6 +123,8 @@ settings_buttons["ambiguous_order_objects"].text = str(settings_data["Settings"]
 
 settings_buttons["garbage_length"] = user_interface.InputButton("Garbage Word Length:", 25, Rectangle(50 + measure_text("Garbage Word Length:", 25) + 10, 230, measure_text("0", 25), 25))
 settings_buttons["garbage_length"].text = str(settings_data["Settings"]["GarbageWordLength"])
+settings_buttons["timer_duration"] = user_interface.InputButton("Timer Duration:", 25, Rectangle(50 + measure_text("Timer Duration:", 25) + 10, 280, measure_text("000", 25), 25))
+settings_buttons["timer_duration"].text = str(settings_data["Settings"]["TimerDuration"])
 blacklist_toggle = []
 def redirect_settings():
     global deep_settings
@@ -158,6 +161,10 @@ unload_image(background)
 unload_image(settings_background)
 unload_image(deep_settings_background)
 
+timer_ui = load_image("timer_ui.jpeg")
+timer_ui_texture = load_texture_from_image(timer_ui)
+unload_image(timer_ui)
+
 is_generating = True
 directions = ["North", "South", "East", "West", "North-East", "North-West", "South-East", "South-West"]
 opposite_directions = ["South", "North", "West", "East", "South-West", "South-East", "North-West", "North-East"]
@@ -168,6 +175,7 @@ ambiguous_premises = []
 negated_premises = []
 conclusion = ""
 answer = False
+time_elapsed_since_generation = 0
 def generate_gibberish_word(word_length: int):
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(word_length))
 def generate_gibberish_words(object_count: int, word_length: int, black_list: List[str]):
@@ -214,6 +222,8 @@ def get_largest_chain(chains: List[List[str]], chosen_one: str):
         if old_weight != largest_weight:
             chain_index = i
     return chain_index
+timer_tints = [WHITE, Color(255, 166, 166, 255)]
+timer_tint_alpha = 0.0
 chosen_gamemode = ""
 while not window_should_close():
     begin_drawing()
@@ -379,14 +389,21 @@ while not window_should_close():
             draw_texture(deep_settings_background_texture, 0, 0, GRAY)
             if settings_buttons["garbage_length"]._enabled:
                 settings_buttons["garbage_length"].toggle()
+            if settings_buttons["timer_duration"]._enabled:
+                settings_buttons["timer_duration"].toggle()
         else:
+            time_elapsed_since_generation = 0
             draw_texture(settings_background_texture, 0, 0, GRAY)
             if not settings_buttons["garbage_length"]._enabled:
                 settings_buttons["garbage_length"].toggle()
+            if not settings_buttons["timer_duration"]._enabled:
+                settings_buttons["timer_duration"].toggle()
             redirect_settings()
     else:
         if settings_buttons["garbage_length"]._enabled:
             settings_buttons["garbage_length"].toggle()
+        if settings_buttons["timer_duration"]._enabled:
+            settings_buttons["timer_duration"].toggle()
         if viewing_key:
             i = 0
             for relation, word in problem_spatial_code.items():
@@ -478,12 +495,32 @@ while not window_should_close():
                 premise_page = 1
                 conclusion = ""
                 answer = False
+                time_elapsed_since_generation = 0
                 with open("settings_data.json", "w") as file:
                     json.dump(settings_data, file)
         if is_key_down(KeyboardKey.KEY_V):
             viewing_key = True
         elif is_key_released(KeyboardKey.KEY_V):
             viewing_key = False
+        time_elapsed_since_generation += get_frame_time()
+        if time_elapsed_since_generation > settings_data["Settings"]["TimerDuration"]:
+            time_elapsed_since_generation = 0
+            is_generating = True
+            problem_spatial_code = {}
+            premises = []
+            chained_premises = []
+            ambiguous_premises = []
+            negated_premises = []
+            premise_page = 1
+            conclusion = ""
+            answer = False
+        else:
+            timer_tint_alpha += get_frame_time() / 3.0
+            if timer_tint_alpha > 1:
+                timer_tint_alpha = timer_tint_alpha % 1.0
+                timer_tints[0], timer_tints[1] = timer_tints[1], timer_tints[0]
+            draw_text("Timer:", int((RESOLUTION_X / 2) - 0.75 * (RESOLUTION_Y / 2)) + 80, int(0.25 * (RESOLUTION_Y / 2)) - 60, 50, WHITE)
+            draw_texture_pro(timer_ui_texture, Rectangle(0, 0, timer_ui_texture.width, timer_ui_texture.height), Rectangle(int((RESOLUTION_X / 2) - 0.75 * (RESOLUTION_Y / 2)) + 500, int(0.25 * (RESOLUTION_Y / 2)) - 25, timer_ui_texture.width  * (1 - (time_elapsed_since_generation / settings_data["Settings"]["TimerDuration"])), 0.75 * timer_ui_texture.height), Vector2(timer_ui_texture.width / 2, timer_ui_texture.height / 2), 0, color_lerp(timer_tints[0], timer_tints[1], timer_tint_alpha))
     if not viewing_key:
         draw_text("[S] Settings", 50, 30, 25, WHITE)
     if is_key_pressed(KeyboardKey.KEY_S) and not viewing_key:
@@ -512,6 +549,7 @@ while not window_should_close():
         settings_data["Settings"]["Ambiguous Order"]["Objects"] = max(int(settings_buttons["ambiguous_order_objects"].text), 8)
 
         settings_data["Settings"]["GarbageWordLength"] = int(settings_buttons["garbage_length"].text)
+        settings_data["Settings"]["TimerDuration"] = int(settings_buttons["timer_duration"].text)
         with open("settings_data.json", "w") as file:
             json.dump(settings_data, file)
     for settings_object in settings_buttons.values():
